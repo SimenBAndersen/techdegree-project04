@@ -13,7 +13,22 @@
   const boxes = document.querySelector(".boxes");
   const box = document.querySelectorAll(".box");
   const message = document.querySelector(".message");
-  
+
+  // Prompt the user for a name
+  // Appends the name under player1 in the board screen
+  let playerName = prompt("What's your name?");
+  let playerNameDiv = document.createElement("div");
+  playerNameDiv.textContent = playerName;
+  player1.appendChild(playerNameDiv);
+
+  // The player variables and their symbol
+  let human = 'O';
+  let computer = 'X';
+
+  /* let boardArray = ['O',1,2,3,4,5,6,7,8];
+  let testMinimax = minimax(boardArray, computer);
+  console.log("testMinimax: " + testMinimax); */
+
   // Keep track of the next player/turn
   // Will toggle between 1 and 2
   let whoIsNext = 1;
@@ -55,25 +70,64 @@
       event.target.classList.add("box-filled-" + whoIsNext);
 
       // Changes which player is next and the current active
-      if (whoIsNext == 1) {
-        player1.classList.remove("active");
-        player2.classList.add("active");
-        whoIsNext++;
-      } else {
-        player2.classList.remove("active");
-        player1.classList.add("active");
-        whoIsNext--;
-      }
+      changePlayer();
     }
 
+    // If next player is the computer
+    if (whoIsNext == 2 && !isGameWon()) {
+
+      // Array to store the current boxes and their input
+      let currentBoard = [];
+
+      // Loops through the boxes and pushes their value/input or index..
+      // .. to the currentBoard array
+      for (let i = 0; i < box.length; i++) {
+        if (box[i].classList.contains("box-filled-1")) {
+          currentBoard.push('O');
+        } else if (box[i].classList.contains("box-filled-2")) {
+          currentBoard.push('X');
+        } else { currentBoard.push(i); }
+      }
+
+      // Calculates the computer's choice based on the current board
+      let computerChoice = minimax(currentBoard, computer);
+
+      // Marks the computer's choice
+      box[computerChoice.index].classList.add("box-filled-2");
+
+      // Change the active player
+      changePlayer();
+    }
+
+    // Checks if the game is won/lost/drawn
     isGameWon();
 
   };
+
+  // Changes which player is next and the current active
+  function changePlayer() {
+    if (whoIsNext == 1) {
+      player1.classList.remove("active");
+      player2.classList.add("active");
+      whoIsNext++;
+    } else {
+      player2.classList.remove("active");
+      player1.classList.add("active");
+      whoIsNext--;
+    }
+  }
 
   // Display the winner screen
   function finishScreen() {
     board.style.display = "none";
     finish.style.display = "block";
+  }
+
+  // Reset the active player to player1
+  function setPlayer1() {
+    whoIsNext = 1;
+    player1.classList.add("active");
+    player2.classList.remove("active");
   }
 
   // Check if the game is a draw
@@ -104,6 +158,7 @@
 			[2,4,6]
     ];
 
+    // If any of the lines is filled with O's (player1)
     for (let i = 0; i < lines.length; i++) {
       if (box[lines[i][0]].classList.contains("box-filled-1") &&
           box[lines[i][1]].classList.contains("box-filled-1") &&
@@ -112,9 +167,12 @@
             // Display the winner screen
             finishScreen();
             finish.classList.add("screen-win-one")
-            message.innerHTML = "Winner";
+            message.innerHTML = playerName + " is the winner";
+            setPlayer1();
             return;
       }
+
+      // If any of the lines is filled with X's (player2)
       else if (box[lines[i][0]].classList.contains("box-filled-2") &&
                box[lines[i][1]].classList.contains("box-filled-2") &&
                box[lines[i][2]].classList.contains("box-filled-2")) {
@@ -123,32 +181,137 @@
                  finishScreen();
                  finish.classList.add("screen-win-two")
                  message.innerHTML = "Winner";
+                 setPlayer1();
                  return;
 
+      // If no lines are complete and board is full
       } else if (!isGameDraw()) {
-        console.log("Draw");
         finishScreen();
         finish.classList.add("screen-win-tie")
         message.innerHTML = "It's a tie!";
-
-      } else {
-        console.log("Game is not over yet");
+        setPlayer1();
       }
     }
   }
 
+  // Start a new game from the finish screen
   newGame.onclick = function() {
-    console.log("is clicked");
     for (let i = 0; i < box.length; i++) {
       box[i].classList.remove("box-filled-1", "box-filled-2");
       box[i].style.backgroundImage = "";
     }
 
+    // Resets the finish screen html classes
     finish.classList.remove("screen-win-tie", "screen-win-one",
                             "screen-win-two");
 
+    // Removes the finish screen and displays the board
     finish.style.display = "none";
     board.style.display = "block";
   };
+
+  //
+  // Implement the minimax algorithm as the computer-player:
+  // - Recursive function that will help the computer pick boxes
+  // - The computer-player is guaranteed to not lose
+  // - Will draw against a perfect player
+  //
+  function minimax(newBoard, player) {
+
+    // Which boxes are available for the computer to pick
+    let availableBoxes = emptyBoxes(newBoard);
+
+    // Values to symbolise a loss, win and draw for a move
+    if (winning(newBoard, human)) {
+      return {score:-10};
+    }
+    else if (winning(newBoard, computer)) {
+      return {score:10};
+	  }
+    else if (availableBoxes.length === 0) {
+  	  return {score:0};
+    }
+
+    // Array to store the potential moves in
+    let moves = [];
+
+    // Loops through the potential moves and calculates their outcome
+    for (let i = 0; i < availableBoxes.length; i++) {
+
+      // Object to store outcome/score of the potential moves
+      let move = {};
+
+      move.index = newBoard[availableBoxes[i]];
+
+      // Sets the available box to the current player
+      newBoard[availableBoxes[i]] = player;
+
+      // Calculates the best moves for the opponent of the current player
+      if (player == computer) {
+        let result = minimax(newBoard, human);
+        move.score = result.score;
+      }
+      else {
+        let result = minimax(newBoard, computer);
+        move.score = result.score;
+      }
+
+      // Resets/empty the box
+      newBoard[availableBoxes[i]] = move.index;
+
+      // Pushes the move object to the moves array
+      moves.push(move);
+    }
+
+    // Variable to store the best possible box/move index
+    let bestMove;
+
+    // Find the move with the highest score if the current player is..
+    // .. the computer player
+    if (player === computer) {
+      let bestScore = -10000;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score > bestScore) {
+          bestScore = moves[i].score;
+          bestMove = i;
+        }
+      }
+
+    // Find the move with the lowest score if the current player is..
+    // .. the human player
+    } else {
+      let bestScore = 10000;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score < bestScore) {
+          bestScore = moves[i].score;
+          bestMove = i;
+        }
+      }
+    }
+
+    // Returns the best move object
+    return moves[bestMove];
+  }
+
+  // Loops though the boxes and finds who is not an O or an X
+  function emptyBoxes(board){
+    return  board.filter(s => s != "O" && s != "X");
+  }
+
+  // Checks if the board is a won position
+  function winning(board, player){
+   if ((board[0] == player && board[1] == player && board[2] == player) ||
+       (board[3] == player && board[4] == player && board[5] == player) ||
+       (board[6] == player && board[7] == player && board[8] == player) ||
+       (board[0] == player && board[3] == player && board[6] == player) ||
+       (board[1] == player && board[4] == player && board[7] == player) ||
+       (board[2] == player && board[5] == player && board[8] == player) ||
+       (board[0] == player && board[4] == player && board[8] == player) ||
+       (board[2] == player && board[4] == player && board[6] == player)) {
+          return true;
+      } else {
+          return false;
+      }
+  }
 
 }());
