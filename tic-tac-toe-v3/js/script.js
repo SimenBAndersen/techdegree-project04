@@ -17,9 +17,7 @@
   // Prompt the user for a name
   // Appends the name under player1 in the board screen
   let playerName = prompt("What's your name?");
-  let playerNameDiv = document.createElement("div");
-  playerNameDiv.textContent = playerName;
-  player1.appendChild(playerNameDiv);
+  document.querySelector(".playerName").textContent = playerName;
 
   // The player variables and their symbol
   let human = 'O';
