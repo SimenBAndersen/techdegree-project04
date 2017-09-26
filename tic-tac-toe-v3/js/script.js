@@ -13,11 +13,16 @@
   const boxes = document.querySelector(".boxes");
   const box = document.querySelectorAll(".box");
   const message = document.querySelector(".message");
+  const gameAlt = document.querySelector("#gameAlternatives");
+
+  // Variable to keep track of the game type:
+  // - 2-player or computer game
+  let isTwoPlayer = true;
 
   // Prompt the user for a name
   // Appends the name under player1 in the board screen
-  let playerName = prompt("What's your name?");
-  document.querySelector(".playerName").textContent = playerName;
+  let playerName;
+  let player2Name;
 
   // The player variables and their symbol
   let human = 'O';
@@ -38,9 +43,32 @@
 
   // When the start game button is clicked: Switch from start to board screen
   startButton.onclick = function () {
+
+    // Get the inputted names from the start screen and show..
+    // .. them on the board screen
+    playerName = document.querySelector("#name1").value;
+    document.querySelector("#playerName1").textContent = playerName;
+    if (isTwoPlayer) {
+      player2Name = document.querySelector("#name2").value;
+      document.querySelector("#playerName2").textContent = player2Name;
+    }
     start.style.display = "none";
     board.style.display = "block";
   };
+
+  // Register what type of game is to be play, against human or computer
+  // If human, add another name input text box
+  gameAlt.onchange = function (event) {
+    if (event.target.value === "friend") {
+      isTwoPlayer = true;
+      document.querySelector("#name2").classList.remove("is-hidden");
+    } else if (event.target.value === "computer") {
+      isTwoPlayer = false;
+      document.querySelector("#name2").classList.add("is-hidden");
+    } else {
+      document.querySelector("#name2").classList.add("is-hidden");
+    }
+  }
 
   // When the user hovers over an empty box: change the backgroundImage..
   // .. to the player's symbol
@@ -72,7 +100,7 @@
     }
 
     // If next player is the computer
-    if (whoIsNext == 2 && !isGameWon()) {
+    if (whoIsNext == 2 && !isGameWon() && !isTwoPlayer) {
 
       // Array to store the current boxes and their input
       let currentBoard = [];
@@ -178,7 +206,11 @@
                  // Display the winner screen
                  finishScreen();
                  finish.classList.add("screen-win-two")
-                 message.innerHTML = "Winner";
+                 if (isTwoPlayer) {
+                   message.innerHTML = player2Name + " is the winner";
+                 } else {
+                   message.innerHTML = "Winner";
+                 }
                  setPlayer1();
                  return;
 
